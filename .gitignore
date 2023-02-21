@@ -9,7 +9,13 @@ nunitresults.xml
 .nyc_output/
 coverage/
 
+# VS Code
+.vscode
+
 # Intellij
 .idea/
 
 style-conversion
+
+# Mac
+.DS_Store

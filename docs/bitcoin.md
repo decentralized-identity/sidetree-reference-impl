@@ -5,9 +5,9 @@
 
 ### Protocol parameters
 
-| Protocol parameters                  | Description                                              |
-| ------------------------------------ | ---------------------------------------------------------|
-| valueTimeLockDurationInBlocks        | The duration which a value time lock is required to have |
+| Protocol parameters           | Description                                              |
+|-------------------------------|----------------------------------------------------------|
+| valueTimeLockDurationInBlocks | The duration which a value time lock is required to have |
 
 ### Configuration parameters
 * valueTimeLockUpdateEnabled

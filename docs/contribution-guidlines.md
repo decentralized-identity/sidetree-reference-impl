@@ -42,21 +42,12 @@ Where the `type` must be one of the following, indicating the type of change bei
 
 The `scope` defines what is being changed, in this repository the scope **MUST** be one of the following
 
-* **spec**: Changes being made to the Sidetree specification
-* **ref-imp**: Changes being made to the Sidetree reference implementation
-
 The `subject` should be a short descriptive statement describing the nature of the change made by the commit.
 
 Full examples
 
 ```
-feat(ref-imp): add fee calculation algorithm
-```
-
-or 
-
-```
-fix(spec): ambiguity around update operation terminology
+feat: add fee calculation algorithm
 ```
 
 ### Breaking changes

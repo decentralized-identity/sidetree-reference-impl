@@ -4,7 +4,7 @@ This document focuses on the Node.js reference implementation of the Sidetree sp
 
 ## Overview
 
-![Architecture diagram](/www/diagrams/architecture.png)
+![Architecture diagram](diagrams/architecture.png)
 
 ## Node Types
 
@@ -53,7 +53,7 @@ Protocol versioning configuration file example:
 ]
 ```
 
-![Versioning diagram](/www/diagrams/versioning.png)
+![Versioning diagram](diagrams/versioning.png)
 
 ### Orchestration Layer
 There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all Sidetree versions, the orchestration layer should be kept as thin as possible.
@@ -82,7 +82,7 @@ The orchestration layer requires implementation of following interfaces per prot
 ### REST API HTTP Response status codes
 
 | HTTP status code | Description                              |
-| ---------------- | ---------------------------------------- |
+|------------------|------------------------------------------|
 | 200              | Everything went well.                    |
 | 400              | Bad client request.                      |
 | 401              | Unauthenticated or unauthorized request. |
@@ -186,8 +186,6 @@ GET /time
 }
 ```
 
-
-
 ### Get blockchain time by hash
 Gets the time identified by the time hash.
 
@@ -223,8 +221,6 @@ GET /time/0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051
 }
 ```
 
-
-
 ### Fetch Sidetree transactions
 Fetches Sidetree transactions in chronological order.
 
@@ -237,7 +233,6 @@ GET /transactions?since=<transaction-number>&transaction-time-hash=<transaction-
 
 #### Request headers
 None.
-
 
 #### Request query parameters
 - `since`
@@ -329,9 +324,9 @@ POST /transactions/firstValid HTTP/1.1
 ```
 
 #### Request headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
+| Name               | Value                  |
+|--------------------|------------------------|
+| ```Content-Type``` | ```application/json``` |
 
 #### Request body schema
 ```json

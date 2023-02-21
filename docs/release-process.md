@@ -54,7 +54,3 @@ The releases have the following version syntax `<current package version + patch
 
 **Note** To skip the automatic release of a new unstable version append `[skip ci]` to the end of the commit message
 that is merged into master.
-
-## Specification
-
-TODO document
