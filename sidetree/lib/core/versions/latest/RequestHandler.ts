@@ -3,6 +3,7 @@ import Did from './Did';
 import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
 import ErrorCode from './ErrorCode';
+import IDidTypeStore from '../../interfaces/IDidTypeStore';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
 import JsonAsync from './util/JsonAsync';
@@ -26,6 +27,7 @@ export default class RequestHandler implements IRequestHandler {
   public constructor (
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
+    private didtypeStore: IDidTypeStore,
     private didMethodName: string) {
     this.operationProcessor = new OperationProcessor();
   }
@@ -119,6 +121,17 @@ export default class RequestHandler implements IRequestHandler {
         status: ResponseStatus.ServerError
       };
     }
+  }
+
+  public async handleDidTypeRequest (didType: string): Promise<ResponseModel> {
+    Logger.info(`Handling did type request: ${didType}`);
+
+    const didTypes = await this.didtypeStore.get(didType);
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: didTypes
+    };
   }
 
   private async handleCreateRequest (operationModel: OperationModel): Promise<ResponseModel> {

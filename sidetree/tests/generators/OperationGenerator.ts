@@ -98,8 +98,8 @@ export default class OperationGenerator {
   /**
    * Generates an anchored create operation.
    */
-  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput) {
-    const createOperationData = await OperationGenerator.generateCreateOperation();
+  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput, didType?:string) {
+    const createOperationData = await OperationGenerator.generateCreateOperation(didType);
 
     const anchoredOperationModel = {
       type: OperationType.Create,
@@ -223,7 +223,7 @@ export default class OperationGenerator {
   /**
    * Generates a create operation.
    */
-  public static async generateCreateOperation () {
+  public static async generateCreateOperation (didType?: string) {
     const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [updatePublicKey, updatePrivateKey] = await Jwk.generateEs256kKeyPair();
@@ -234,7 +234,8 @@ export default class OperationGenerator {
       recoveryPublicKey,
       updatePublicKey,
       [signingPublicKey],
-      services
+      services,
+      didType
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
@@ -380,7 +381,8 @@ export default class OperationGenerator {
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
     otherPublicKeys: PublicKeyModel[],
-    services?: ServiceModel[]) {
+    services?: ServiceModel[],
+    didType?: string) {
     const document: DocumentModel = {
       publicKeys: otherPublicKeys,
       services
@@ -400,6 +402,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       deltaHash,
+      type: didType,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 

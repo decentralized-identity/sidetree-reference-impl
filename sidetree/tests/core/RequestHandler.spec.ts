@@ -15,6 +15,7 @@ import DidState from '../../lib/core/models/DidState';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import Fixture from '../utils/Fixture';
 import ICas from '../../lib/core/interfaces/ICas';
+import IDidTypeStore from '../../lib/core/interfaces/IDidTypeStore';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import JsonAsync from '../../lib/core/versions/latest/util/JsonAsync';
@@ -23,6 +24,7 @@ import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockConfirmationStore from '../mocks/MockConfirmationStore';
+import MockDidTypeStore from '../mocks/MockDidTypeStore';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -54,6 +56,7 @@ describe('RequestHandler', () => {
   let cas: ICas;
   let batchScheduler: BatchScheduler;
   let operationStore: IOperationStore;
+  let didTypeStore: IDidTypeStore;
   let resolver: Resolver;
   let requestHandler: RequestHandler;
   let versionManager: IVersionManager;
@@ -89,11 +92,13 @@ describe('RequestHandler', () => {
     spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 
     operationStore = new MockOperationStore();
+    didTypeStore = new MockDidTypeStore();
     resolver = new Resolver(versionManager, operationStore);
     batchScheduler = new BatchScheduler(versionManager, blockchain, config.batchingIntervalInSeconds);
     requestHandler = new RequestHandler(
       resolver,
       operationQueue,
+      didTypeStore,
       didMethodName
     );
 
@@ -169,6 +174,11 @@ describe('RequestHandler', () => {
   it('should process deactivate operation from test vectors correctly', async () => {
     const deactivateOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.deactivate.operationRequest));
     const response = await requestHandler.handleOperationRequest(deactivateOperationBuffer);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+  });
+
+  it('should process did type request correctly', async () => {
+    const response = await requestHandler.handleDidTypeRequest('didtype');
     expect(response.status).toEqual(ResponseStatus.Succeeded);
   });
 

@@ -10,6 +10,11 @@ export default interface IRequestHandler {
   handleOperationRequest (request: Buffer): Promise<ResponseModel>;
 
   /**
+   * Handles a did type request.
+   */
+  handleDidTypeRequest (didType: string): Promise<ResponseModel>;
+
+  /**
    * Handles resolve operation.
    * @param didOrDidDocument Can either be:
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or

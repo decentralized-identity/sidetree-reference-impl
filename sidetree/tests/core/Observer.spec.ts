@@ -7,6 +7,7 @@ import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
+import IDidTypeStore from '../../lib/core/interfaces/IDidTypeStore';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
@@ -14,6 +15,7 @@ import Ipfs from '../../lib/ipfs/Ipfs';
 import Logger from '../../lib/common/Logger';
 import MockConfirmationStore from '../mocks/MockConfirmationStore';
 // import MockBlockchain from '../mocks/MockBlockchain';
+import MockDidTypeStore from '../mocks/MockDidTypeStore';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -34,6 +36,7 @@ describe('Observer', async () => {
   let casClient;
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
+  let didTypeStore: IDidTypeStore;
   let transactionStore: MockTransactionStore;
   // let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
@@ -59,6 +62,7 @@ describe('Observer', async () => {
 
     blockchainClient = new Blockchain(config.blockchainServiceUri);
     operationStore = new MockOperationStore();
+    didTypeStore = new MockDidTypeStore();
     transactionStore = new MockTransactionStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
@@ -67,7 +71,7 @@ describe('Observer', async () => {
     // Mock the blockchain to return an empty lock
     spyOn(blockchainClient, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
-    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchainClient, versionMetadataFetcher);
+    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, didTypeStore, blockchainClient, versionMetadataFetcher);
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
@@ -80,6 +84,7 @@ describe('Observer', async () => {
       blockchainClient,
       config.maxConcurrentDownloads,
       operationStore,
+      didTypeStore,
       transactionStore,
       transactionStore,
       new MockConfirmationStore(),
@@ -287,6 +292,83 @@ describe('Observer', async () => {
       const operationArray = await operationStore.get(didUniqueSuffix);
       expect(operationArray.length).toEqual(1);
     }
+  });
+
+  it('should process a valid operation batch successfully with did types.', async () => {
+    const operation1Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 }, '0005');
+    const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 }, '0005');
+    const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
+
+    const coreProofFileUri = undefined;
+
+    // Generating chunk file data.
+    const mockChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
+    const mockChunkFileFetchResult: FetchResult = {
+      code: FetchResultCode.Success,
+      content: mockChunkFileBuffer
+    };
+    const mockChunkFileUri = 'MockChunkFileUri';
+
+    // Generating provisional index file data.
+    const mockProvisionalProofFileUri = undefined;
+    const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileUri, mockProvisionalProofFileUri, []);
+    const mockProvisionalIndexFileUri = 'MockProvisionalIndexFileUri';
+    const mockProvisionalIndexFileFetchResult: FetchResult = {
+      code: FetchResultCode.Success,
+      content: mockProvisionalIndexFileBuffer
+    };
+
+    // Generating core index file data.
+    const mockCoreIndexFileBuffer =
+      await CoreIndexFile.createBuffer('writerLock', mockProvisionalIndexFileUri, coreProofFileUri, createOperations, [], []);
+    const mockAnchoredFileFetchResult: FetchResult = {
+      code: FetchResultCode.Success,
+      content: mockCoreIndexFileBuffer
+    };
+    const mockCoreIndexFileUri = 'MockCoreIndexFileUri';
+
+    // Prepare the mock fetch results from the `DownloadManager.download()`.
+    const mockDownloadFunction = async (hash: string) => {
+      if (hash === mockCoreIndexFileUri) {
+        return mockAnchoredFileFetchResult;
+      } else if (hash === mockProvisionalIndexFileUri) {
+        return mockProvisionalIndexFileFetchResult;
+      } else if (hash === mockChunkFileUri) {
+        return mockChunkFileFetchResult;
+      } else {
+        throw new Error('Test failed, unexpected hash given');
+      }
+    };
+    spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
+
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileUri, numberOfOperations: createOperations.length });
+
+    const mockTransaction: TransactionModel = {
+      transactionNumber: 1,
+      transactionTime: 1000000,
+      transactionTimeHash: '1000',
+      anchorString: anchoredData,
+      transactionFeePaid: 1,
+      normalizedTransactionFee: 1,
+      writer: 'writer'
+    };
+    const transactionUnderProcessing = {
+      transaction: mockTransaction,
+      processingStatus: 'pending'
+    };
+    await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
+
+    const didUniqueSuffixes = createOperations.map(operation => operation.didUniqueSuffix);
+    for (const didUniqueSuffix of didUniqueSuffixes) {
+      const operationArray = await operationStore.get(didUniqueSuffix);
+      expect(operationArray.length).toEqual(1);
+    }
+
+    const didTypeStoreResults = await didTypeStore.get('0005');
+
+    expect(didTypeStoreResults.length).toEqual(2);
+    expect(didTypeStoreResults[0]).toEqual(createOperations[0].didUniqueSuffix);
+    expect(didTypeStoreResults[1]).toEqual(createOperations[1].didUniqueSuffix);
   });
 
   // Testing invalid core index file scenarios:

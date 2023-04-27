@@ -6,6 +6,7 @@ import IBatchWriter from './interfaces/IBatchWriter';
 import IBlockchain from './interfaces/IBlockchain';
 import ICas from './interfaces/ICas';
 import IConfirmationStore from './interfaces/IConfirmationStore';
+import IDidTypeStore from './interfaces/IDidTypeStore';
 import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
@@ -55,6 +56,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     cas: ICas,
     downloadManager: DownloadManager,
     operationStore: IOperationStore,
+    didTypeStore: IDidTypeStore,
     resolver: Resolver,
     transactionStore: ITransactionStore,
     confirmationStore: IConfirmationStore
@@ -70,7 +72,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       await operationQueue.initialize();
 
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
-      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, this);
+      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, didTypeStore, blockchain, this);
       this.transactionProcessors.set(version, transactionProcessor);
 
       const TransactionSelector = await this.loadDefaultExportsForVersion(version, 'TransactionSelector');
@@ -86,7 +88,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       this.operationProcessors.set(version, operationProcessor);
 
       const RequestHandler = await this.loadDefaultExportsForVersion(version, 'RequestHandler');
-      const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName);
+      const requestHandler = new RequestHandler(resolver, operationQueue, didTypeStore, this.config.didMethodName);
       this.requestHandlers.set(version, requestHandler);
 
       const VersionMetadata = await this.loadDefaultExportsForVersion(version, 'VersionMetadata');

@@ -4,6 +4,7 @@ import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import IConfirmationStore from './interfaces/IConfirmationStore';
+import IDidTypeStore from './interfaces/IDidTypeStore';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
@@ -43,6 +44,7 @@ export default class Observer {
     private blockchain: IBlockchain,
     private maxConcurrentDownloads: number,
     private operationStore: IOperationStore,
+    private didTypeStore: IDidTypeStore,
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private confirmationStore: IConfirmationStore,
@@ -341,6 +343,7 @@ export default class Observer {
     // Revert all processed operations that came after the best known valid recent transaction.
     Logger.info('Reverting operations...');
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
+    await this.didTypeStore.delete(bestKnownValidRecentTransactionNumber);
 
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 

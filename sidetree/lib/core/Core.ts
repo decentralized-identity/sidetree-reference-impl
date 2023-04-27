@@ -12,6 +12,7 @@ import IBlockchain from './interfaces/IBlockchain';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
 import MongoDbConfirmationStore from './MongoDbConfirmationStore';
+import MongoDbDidTypeStore from './MongoDbDidTypeStore';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
@@ -38,6 +39,7 @@ export default class Core {
   private transactionStore: MongoDbTransactionStore;
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
+  private didTypeStore: MongoDbDidTypeStore;
   private versionManager: VersionManager;
   private downloadManager: DownloadManager;
   private observer: Observer;
@@ -61,6 +63,7 @@ export default class Core {
     this.serviceInfo = new ServiceInfo('core');
     this.serviceStateStore = new MongoDbServiceStateStore(this.config.mongoDbConnectionString, this.config.databaseName);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
+    this.didTypeStore = new MongoDbDidTypeStore(config.mongoDbConnectionString, config.databaseName);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -77,6 +80,7 @@ export default class Core {
       this.blockchain,
       config.maxConcurrentDownloads,
       this.operationStore,
+      this.didTypeStore,
       this.transactionStore,
       this.unresolvableTransactionStore,
       this.confirmationStore,
@@ -102,6 +106,7 @@ export default class Core {
       this.cas,
       this.downloadManager,
       this.operationStore,
+      this.didTypeStore,
       this.resolver,
       this.transactionStore,
       this.confirmationStore
@@ -139,6 +144,7 @@ export default class Core {
         await this.transactionStore.initialize();
         await this.unresolvableTransactionStore.initialize();
         await this.operationStore.initialize();
+        await this.didTypeStore.initialize();
         await this.confirmationStore.initialize();
         await this.upgradeDatabaseIfNeeded();
         return;
@@ -158,6 +164,16 @@ export default class Core {
     const currentTime = this.blockchainClock.getTime()!;
     const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleOperationRequest(request);
+    return response;
+  }
+
+  /**
+   * Handles a did type request
+   */
+  public async handleDidTypeRequest (request: string): Promise<ResponseModel> {
+    const currentTime = this.blockchainClock.getTime()!;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime);
+    const response = requestHandler.handleDidTypeRequest(request);
     return response;
   }
 
@@ -220,12 +236,14 @@ export default class Core {
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
     await this.operationStore.delete();
+    await this.didTypeStore.delete();
     await this.transactionStore.clearCollection();
     await this.unresolvableTransactionStore.clearCollection();
 
     // There was a index change/addition in from v1.0.0 -> v1.0.1 of the DB, this line ensures new indices are created,
     // but can be optional in the future when v1.0.0 is so old that we don't care about upgrade path from it.
     await this.operationStore.createIndex();
+    await this.didTypeStore.createIndex();
 
     await this.serviceStateStore.put({ databaseVersion: expectedDbVersion });
 

@@ -6,11 +6,13 @@ import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';
 import CoreIndexFile from './CoreIndexFile';
 import CoreProofFile from './CoreProofFile';
+import DidTypeModel from '../../models/DidTypeModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
 import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
+import IDidTypeStore from '../../interfaces/IDidTypeStore';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
@@ -31,6 +33,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
   public constructor (
     private downloadManager: DownloadManager,
     private operationStore: IOperationStore,
+    private didTypeStore : IDidTypeStore,
     private blockchain: IBlockchain,
     private versionMetadataFetcher: IVersionMetadataFetcher) {
   }
@@ -122,6 +125,15 @@ export default class TransactionProcessor implements ITransactionProcessor {
     // Once code reaches here, it means all the files that are not `undefined` (and their relationships) are validated,
     // there is no need to perform any more validations at this point, we just need to compose the anchored operations and store them.
 
+    try {
+      const didTypeModels = this.composeDidTypeModels(coreIndexFile, transaction.transactionNumber);
+      if (didTypeModels.length > 0) {
+        await this.didTypeStore.insert(didTypeModels);
+      }
+    } catch (error) {
+      Logger.error(LogColor.red(`Unexpected error while adding did type ${error.message}`));
+    }
+
     // Compose using files downloaded into anchored operations.
     const operations = await this.composeAnchoredOperationModels(
       transaction, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel
@@ -160,6 +172,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const valueTimeLock = coreIndexFile.model.writerLockId
       ? await this.blockchain.getValueTimeLock(coreIndexFile.model.writerLockId)
       : undefined;
+
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
       paidOperationCount,
@@ -286,6 +299,30 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     return chunkFileModel;
+  }
+
+  /**
+   * Retrieves the corresponding suffixData from the `operations.create` in the core index file. If the suffixData has a `type` property,
+   * a new DidTypeModel object is created with the DID unique suffix and the DID type, and the object is added to the resulting `didTypes` array.
+   */
+  private composeDidTypeModels (coreIndexFile: CoreIndexFile, transactionNumber: number): DidTypeModel[] {
+    const didTypes: DidTypeModel[] = [];
+
+    const createDidSuffixes = coreIndexFile.createDidSuffixes;
+    for (let i = 0; i < createDidSuffixes.length; i++) {
+      const suffixData = coreIndexFile.model.operations!.create![i].suffixData;
+
+      if (suffixData.type) {
+        const didTypeModel: DidTypeModel = {
+          didUniqueSuffix: createDidSuffixes[i],
+          didType: suffixData.type,
+          transactionNumber: transactionNumber
+        };
+
+        didTypes.push(didTypeModel);
+      }
+    }
+    return didTypes;
   }
 
   private async composeAnchoredOperationModels (

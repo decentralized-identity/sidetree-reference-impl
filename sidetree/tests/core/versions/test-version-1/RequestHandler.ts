@@ -22,4 +22,8 @@ export default class RequestHandler implements IRequestHandler {
   async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
     throw new Error(`RequestHandler: Not implemented. Version: TestVersion1. Inputs: ${didOrDidDocument}`);
   }
+
+  async handleDidTypeRequest (request: string): Promise<ResponseModel> {
+    throw new Error(`RequestHandler: Not implemented. Version: TestVersion1. Inputs: ${request}`);
+  }
 }
