@@ -35,7 +35,17 @@ services:
 
   ion-bitcoin:
     container_name: mainnet-ion-bitcoin
-    image: gabetbd/ion:1.0.5
+
+    # Choose one of the following options to run ion-bitcoin
+    # Remote Image
+    image: nitroneal/ion:1.0.6
+
+    # Local Image
+    # image: ion:1.0.6
+
+    # Local Build
+    # build: ../
+
     command: [ node, "src/bitcoin.js" ]
     working_dir: /ion
     environment:
@@ -49,7 +59,18 @@ services:
 
   ion-core:
     container_name: mainnet-ion-core
-    image: gabetbd/ion:1.0.5
+    # image: nitroneal/ion:1.0.6
+
+    # Choose one of the following options to run ion-core
+    # Remote Image
+    image: nitroneal/ion:1.0.6
+
+    # Local Image
+    # image: ion:1.0.6
+
+    # Local Build
+    # build: ../
+
     command: [ node, "src/core.js" ]
     working_dir: /ion
     environment:

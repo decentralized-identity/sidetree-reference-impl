@@ -90,6 +90,14 @@ router.get(`${resolvePath}:did`, async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
+const didTypePath = '/didtype/';
+router.get(`${didTypePath}:didtype`, async (ctx, _next) => {
+  // Strip away the first '/didtype/' string.
+  const didtype = ctx.url.split(didTypePath)[1];
+  const response = await sidetreeCore.handleDidTypeRequest(didtype);
+  setKoaResponse(response, ctx.response);
+});
+
 router.get('/monitor/operation-queue-size', async (ctx, _next) => {
   const body = await sidetreeCore.monitor.getOperationQueueSize();
   const response = { status: ResponseStatus.Succeeded, body };

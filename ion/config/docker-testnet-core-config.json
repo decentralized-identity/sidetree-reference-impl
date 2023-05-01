@@ -1,6 +1,6 @@
 {
   "batchingIntervalInSeconds": 600,
-  "blockchainServiceUri": "http://ion-bitcoin:3002",
+  "blockchainServiceUri": "http://testnet-ion-bitcoin:3002",
   "databaseName": "ion-testnet-core",
   "didMethodName": "ion:test",
   "ipfsHttpApiEndpointUri": "http://ipfs:5001",
