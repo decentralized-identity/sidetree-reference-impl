@@ -1,5 +1,5 @@
 # Sidetree ION
-This repository contains both Ion and Sidetree, along with a Dockerfile to create a Docker image for the Ion project that depends on the Sidetree project.
+This repository contains both ION and Sidetree, along with a Dockerfile to create a Docker image for the Ion project that depends on the Sidetree project.
 
 ```
 .
