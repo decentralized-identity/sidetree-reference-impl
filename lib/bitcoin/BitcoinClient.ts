@@ -320,7 +320,9 @@ export default class BitcoinClient {
     } catch (e) {
       // using error message because bitcoin core error code is not reliable as a single code can contain multiple errors
       const duplicateLoadString = 'already loaded';
-      if (e.toString().toLowerCase().includes(duplicateLoadString)) {
+      // this error is seen on some versions of bitcoin core when loading a loaded wallet, including v0.20.1
+      const alternateDuplicateLoadString = 'Duplicate -wallet filename specified';
+      if (e.toString().toLowerCase().includes(duplicateLoadString) || e.toString().includes(alternateDuplicateLoadString)) {
         Logger.info(`Wallet with name ${this.walletNameToUse} already loaded.`);
       } else {
         throw e;
